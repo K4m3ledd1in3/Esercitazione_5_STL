@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
-#include <map>
+#include <unordered_map>
 namespace PolygonalLibrary
 {
 bool ImportMesh(PolygonalMesh& mesh)
@@ -19,9 +19,8 @@ bool ImportMesh(PolygonalMesh& mesh)
         return false;
 
     return true;
-
 }
-// ***************************************************************************
+
 bool ImportCell0Ds(PolygonalMesh& mesh)
 {
 	char separator=';';
@@ -38,17 +37,14 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
 
     file.close();
 
-    // remove header
     listLines.pop_front();
 
     mesh.NumCell0Ds = listLines.size();
-
     if (mesh.NumCell0Ds == 0)
     {
         cerr << "There is no cell 0D" << endl;
         return false;
     }
-
     mesh.Cell0DsId.reserve(mesh.NumCell0Ds);
     mesh.Cell0DsCoordinates = Eigen::MatrixXd::Zero(3, mesh.NumCell0Ds);
 	bool flag_marker = true;
@@ -57,16 +53,13 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
     for (const string& line : listLines)
     {
         istringstream converter(line);
-
         unsigned int id;
         unsigned int marker;
         Vector2d coord;
-
         converter >>  id >> separator >> marker 
 		>> separator
 		>> mesh.Cell0DsCoordinates(0, id) >> separator
 		>> mesh.Cell0DsCoordinates(1, id);
-              /// Memorizza i marker
     	x = mesh.Cell0DsCoordinates(0, id);
     	y= mesh.Cell0DsCoordinates(1, id);
         mesh.Cell0DsId.push_back(id);
@@ -79,14 +72,8 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
     if(flag_marker){
     	cout << "All cells have the marker stored correctly" << endl;
 	}
-    
-    /*for(size_t i=0; i<mesh.NumCell0Ds; i++)
- 		cout << "(" << mesh.Cell0DsCoordinates(0,i) << ","<< mesh.Cell0DsCoordinates(1,i) << ")"<<endl;*/
- 	
     return true;
 }
-// ***************************************************************************
-
 bool ImportCell1Ds(PolygonalMesh& mesh)
 {
 	char separator=';';
@@ -101,8 +88,6 @@ bool ImportCell1Ds(PolygonalMesh& mesh)
         listLines.push_back(line);
 
     file.close();
-
-    // remove header
     listLines.pop_front();
 
     mesh.NumCell1Ds = listLines.size();
@@ -130,15 +115,12 @@ bool ImportCell1Ds(PolygonalMesh& mesh)
         mesh.Cell1DsId.push_back(id);
         
     }
-    /*cout << "1D" << endl;
-    for(size_t i =0; i<mesh.NumCell1Ds; i++){
-    	cout << mesh.Cell1DsExtrema(0,i) << "," << mesh.Cell1DsExtrema(1,i) << endl;
-	}*/
+
     
     
     return true;
 }
-// ***************************************************************************
+ 
 void NonZeroLength(PolygonalMesh& mesh)
 {
 	bool flag = true;
@@ -160,7 +142,7 @@ void NonZeroLength(PolygonalMesh& mesh)
 		cout << "No cell has zero length." << endl;
 }
 
-// ***************************************************************************
+ 
 bool ImportCell2Ds(PolygonalMesh& mesh)
 {
 	char separator=';';
@@ -176,7 +158,7 @@ bool ImportCell2Ds(PolygonalMesh& mesh)
         listLines.push_back(line);
 
     file.close();
-    // remove header
+ 
     listLines.pop_front();
     mesh.NumCell2Ds = listLines.size();
 
@@ -187,9 +169,6 @@ bool ImportCell2Ds(PolygonalMesh& mesh)
     }
 
     mesh.Cell2DsId.reserve(mesh.NumCell2Ds);
-    mesh.Cell2DsVertices.reserve(mesh.NumCell2Ds);
-    mesh.Cell2DsEdges.reserve(mesh.NumCell2Ds);
-
     for (const string& line : listLines)
     {
         istringstream converter(line);
@@ -205,43 +184,107 @@ bool ImportCell2Ds(PolygonalMesh& mesh)
 		>> separator >> marker
 		>> separator >> num_vertices;
 		
-		//cout << id << " " << marker << " " << num_vertices << endl;
+  		mesh.Cell2DsVertices[id].reserve(num_vertices);
 		vertices.reserve(num_vertices);  
-		//cout << "ver: ";      
+   
      for(unsigned int i = 0; i < num_vertices; i++)
 			{
             unsigned int v;
             converter >> separator >> v;
     		vertices.push_back(v); 
-			//cout << vertices[i] << " ";
 			}
 			
         converter >> separator >> num_edges;
-        
-        //cout << "num " <<  num_edges <<" ";
         edges.reserve(num_edges);
-         
+        mesh.Cell2DsVertices[id].reserve(num_vertices);
         for(unsigned int i = 0; i < num_edges; i++)
 			{
             unsigned int e;
             converter >> separator >> e;
     		edges.push_back(e); 
-    		//cout << edges[i] << " ";
 			}
-		//	cout << endl;
         mesh.Cell2DsId.push_back(id);
-        mesh.Cell2DsVertices.push_back(vertices);
-        mesh.Cell2DsEdges.push_back(edges);
+        mesh.Cell2DsVertices[id] = vertices;
+        mesh.Cell2DsEdges[id] = edges;
     }
     return true;
 }
+
 void NonZero_Area(PolygonalMesh& mesh){
-	
-	//mappa[id_vertex]: output: archi adiacenti.
-	for(auto& c : mesh.Cell2DsVertices){
-		for(auto& k : c){
-			cout << k << " ";
-		}cout << endl;
-	}
+	double tau = 2.2*10e-16*2.2*10e-16;
+	double TotArea = 0.0;
+	double Area = 0.0;
+	bool flag = true;
+	for(auto& c: mesh.Cell2DsId)
+		{
+			Area = 0.0;
+			vector<double> buff;
+			double X,Y;
+			buff.reserve(2*mesh.Cell2DsEdges[c].size());
+			for(size_t j = 0; j<mesh.Cell2DsEdges[c].size(); j++){
+				unsigned int k = mesh.Cell2DsEdges[c][j];
+				unsigned int s = mesh.Cell1DsExtrema(0,k);
+				double x_s = mesh.Cell0DsCoordinates(0,s);
+				double y_s = mesh.Cell0DsCoordinates(1,s);
+				buff[2*j] = x_s;
+				buff[2*j+1] = y_s;
+				X+=(x_s)/(double)(mesh.Cell2DsEdges[c].size());
+				Y+=(y_s)/(double)(mesh.Cell2DsEdges[c].size());
+				}
+		 			
+			for(size_t i = 0; i<mesh.Cell2DsEdges[c].size(); i++)
+			{
+				double x_i = buff[(2*i)%(mesh.Cell2DsEdges[c].size())];
+				double y_i1 = buff[(2*i+3)%(mesh.Cell2DsEdges[c].size())];
+				double x_i1 = buff[(2*i+2)%(mesh.Cell2DsEdges[c].size())]; 
+				double y_i = buff[(2*i+1)%(mesh.Cell2DsEdges[c].size())];
+				x_i-=X;
+				y_i-=Y;
+				x_i1-=X;
+				y_i1-=Y;
+				Area+=(double) (x_i*y_i1-x_i1*y_i)*(0.5);				
+			}
+			Area=(double)abs(Area);
+			TotArea+=Area;
+			if(Area<tau){
+				cout << "The polygon at cell " << c << " has zero area" << endl;
+				flag = false;
+			}
+		 
+			
+		}
+		if(flag)
+			cout << "None of the cell is such as that has null area."<<endl;
+		cout << "Tot_Area " << TotArea << endl; 
+
 }
+
 }
+	/*	for(auto& k: mesh.Cell2DsEdges[c]) 
+			{
+				unsigned int p = mesh.Cell1DsExtrema(1,k);
+				unsigned int s = mesh.Cell1DsExtrema(0,k);
+				double x_p = mesh.Cell0DsCoordinates(0,p);
+				double y_p = mesh.Cell0DsCoordinates(1,p);
+				buff.push_back(mesh.Cell0DsCoordinates(0,s));
+				buff.push_back(mesh.Cell0DsCoordinates(1,s));
+				buff.push_back(x_p);
+				buff.push_back(y_p);
+				for(size_t i = 0; i<mesh.Cell2DsEdges[c].size(); i++){
+						unsigned int j = mesh.Cell2DsEdges[c][i]; //restituisce arco
+						unsigned int w = mesh.Cell1DsExtrema(0,j); //estremo iniziale arco
+						double x_w = mesh.Cell0DsCoordinates(0,w);
+						double y_w = mesh.Cell0DsCoordinates(1,w);
+						if(abs(x_w-x_p)<2.2*10e-16 && abs(y_w-y_p)<2.2*10e-16){
+							unsigned int h = mesh.Cell1DsExtrema(1,j);
+							buff.push_back(x_w);
+							buff.push_back(y_w);
+							buff.push_back(mesh.Cell0DsCoordinates(0,h));
+							buff.push_back(mesh.Cell0DsCoordinates(1,h));
+							i = mesh.Cell2DsEdges[c].size();
+						}
+						
+				}
+				
+				
+			}*/
