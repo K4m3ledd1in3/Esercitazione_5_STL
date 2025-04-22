@@ -206,30 +206,35 @@ void NonZero_Area(PolygonalMesh& mesh){
 			Area = 0.0;
 			vector<double> buff;
 			double X,Y;
-			buff.reserve( 2*mesh.Cell2DsEdges[c].size() );
-			for(size_t j = 0; j<mesh.Cell2DsEdges[c].size(); j++){
-				unsigned int k = mesh.Cell2DsEdges[c][j];
-				unsigned int s = mesh.Cell1DsExtrema(0,k);
-				double x_s = mesh.Cell0DsCoordinates(0,s); //vertex_x_coordinate.
-				double y_s = mesh.Cell0DsCoordinates(1,s); //vertex_y_coordinate.
+			//cout << " "<< c << " -> " << mesh.Cell2DsEdges[c].size() << endl;
+			buff.reserve( 2*mesh.Cell2DsVertices[c].size() );
+			for(size_t j = 0; j<mesh.Cell2DsVertices[c].size(); j++){
+				unsigned int k = mesh.Cell2DsVertices[c][j];
+				//unsigned int s = mesh.Cell1DsExtrema(0,k);
+				double x_s = mesh.Cell0DsCoordinates(0,k); //vertex_x_coordinate.
+				double y_s = mesh.Cell0DsCoordinates(1,k); //vertex_y_coordinate.
 				buff[2*j] = x_s;
 				buff[2*j+1] = y_s;
-				X+=(x_s) / ( (double)(mesh.Cell2DsEdges[c].size()) );//barycenter X by arithmetic mean on uniform density. .
-				Y+=(y_s) / ( (double)(mesh.Cell2DsEdges[c].size()) );//barycenter by arithmentic mean on uniform density.
+				cout << c << " > (x,y)=" <<"(" <<buff[2*j] << "," <<buff[2*j+1] <<")" << endl;
+				X+=(x_s) / ( (double)(mesh.Cell2DsVertices[c].size()) );//barycenter X by arithmetic mean on uniform density. .
+				Y+=(y_s) / ( (double)(mesh.Cell2DsVertices[c].size()) );//barycenter by arithmentic mean on uniform density.
 				}
-			for(size_t i = 0; i<mesh.Cell2DsEdges[c].size(); i++)
+			for(size_t i = 0; i<mesh.Cell2DsVertices[c].size(); i++)
 			{
-				double x_i = buff[(2*i)%(2*mesh.Cell2DsEdges[c].size())]; //%mod(#buff) needs in order to slide from last vertex up to the first, 
-				double y_i1 = buff[(2*i+3)%(2*mesh.Cell2DsEdges[c].size())];
-				double x_i1 = buff[(2*i+2)%(2*mesh.Cell2DsEdges[c].size())]; 
-				double y_i = buff[(2*i+1)%(2*mesh.Cell2DsEdges[c].size())];
+				double x_i = buff[(2*i)%(2*mesh.Cell2DsVertices[c].size())]; //%mod(#buff) needs in order to slide from last vertex up to the first, 
+				double y_i1 = buff[(2*i+3)%(2*mesh.Cell2DsVertices[c].size())];
+				double x_i1 = buff[(2*i+2)%(2*mesh.Cell2DsVertices[c].size())]; 
+				double y_i = buff[(2*i+1)%(2*mesh.Cell2DsVertices[c].size())];
 				x_i-=X;
 				y_i-=Y;
 				x_i1-=X; //Computation of the area from the barycenter frame, it wouldn't change anything 'cause the area doesn't affected by the reference frame.
 				y_i1-=Y;
-				Area+=(double) (x_i*y_i1-x_i1*y_i)*(0.5);				
+				Area+=(double) (x_i*y_i1-x_i1*y_i)*(0.5);
+				cout <<  "c: " << c <<  ", (x_i: " << x_i << ",y_i: " << y_i << "), " << 
+							", (x_i: " << x_i1 << ",y_i: " << y_i1 << ")." << endl;
 			}
 			Area=(double)abs(Area);
+			cout << " c: " << c << "-> " << Area << endl;
 			TotArea+=Area;
 			if(Area<tau){
 				cout << "The polygon at cell " << c << " has zero area" << endl;
