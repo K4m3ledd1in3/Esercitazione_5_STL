@@ -168,7 +168,6 @@ bool ImportCell2Ds(PolygonalMesh& mesh)
         
         vector<unsigned int> vertices;
         vector<unsigned int> edges;
-        
 		converter >>  id 
 		>> separator >> marker
 		>> separator >> num_vertices;
@@ -206,18 +205,16 @@ void NonZero_Area(PolygonalMesh& mesh){
 			Area = 0.0;
 			vector<double> buff;
 			double X,Y;
-			//cout << " "<< c << " -> " << mesh.Cell2DsEdges[c].size() << endl;
 			buff.reserve( 2*mesh.Cell2DsVertices[c].size() );
 			for(size_t j = 0; j<mesh.Cell2DsVertices[c].size(); j++){
 				unsigned int k = mesh.Cell2DsVertices[c][j];
-				//unsigned int s = mesh.Cell1DsExtrema(0,k);
 				double x_s = mesh.Cell0DsCoordinates(0,k); //vertex_x_coordinate.
 				double y_s = mesh.Cell0DsCoordinates(1,k); //vertex_y_coordinate.
 				buff[2*j] = x_s;
 				buff[2*j+1] = y_s;
-				cout << c << " > (x,y)=" <<"(" <<buff[2*j] << "," <<buff[2*j+1] <<")" << endl;
-				X+=(x_s) / ( (double)(mesh.Cell2DsVertices[c].size()) );//barycenter X by arithmetic mean on uniform density. .
-				Y+=(y_s) / ( (double)(mesh.Cell2DsVertices[c].size()) );//barycenter by arithmentic mean on uniform density.
+				//cout << c << " > (x,y)=" <<"(" <<buff[2*j] << "," <<buff[2*j+1] <<")" << endl;
+				X+=(x_s) / ( (double)(mesh.Cell2DsVertices[c].size()) ); //barycenter X by arithmetic mean on uniform density. .
+				Y+=(y_s) / ( (double)(mesh.Cell2DsVertices[c].size()) ); //barycenter by arithmentic mean on uniform density.
 				}
 			for(size_t i = 0; i<mesh.Cell2DsVertices[c].size(); i++)
 			{
@@ -227,14 +224,13 @@ void NonZero_Area(PolygonalMesh& mesh){
 				double y_i = buff[(2*i+1)%(2*mesh.Cell2DsVertices[c].size())];
 				x_i-=X;
 				y_i-=Y;
-				x_i1-=X; //Computation of the area from the barycenter frame, it wouldn't change anything 'cause the area doesn't affected by the reference frame.
+				x_i1-=X;  //Computation of the area from the barycenter frame, it wouldn't change anything 'cause the area doesn't affected by the reference frame.
 				y_i1-=Y;
 				Area+=(double) (x_i*y_i1-x_i1*y_i)*(0.5);
-				cout <<  "c: " << c <<  ", (x_i: " << x_i << ",y_i: " << y_i << "), " << 
-							", (x_i: " << x_i1 << ",y_i: " << y_i1 << ")." << endl;
 			}
+			
 			Area=(double)abs(Area);
-			cout << " c: " << c << "-> " << Area << endl;
+			cout << " (ID) c: " << c << "-> " << Area << endl;
 			TotArea+=Area;
 			if(Area<tau){
 				cout << "The polygon at cell " << c << " has zero area" << endl;
@@ -243,7 +239,7 @@ void NonZero_Area(PolygonalMesh& mesh){
 		}
 		if(flag)
 			cout << "None of the cell is such as that has null area."<<endl;
-		cout << "Tot_Area " << TotArea << endl; 
+		cout << "Tot_Area of Mesh: " << TotArea << endl; 
 }
 }
 	
