@@ -46,6 +46,7 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
 	bool flag_marker = true;
 	double x,y;
 	double eps=2.2*10e-16;
+	cout << "f"<<endl;
     for (const string& line : listLines)
     {
         istringstream converter(line);
@@ -59,6 +60,9 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
     	x = mesh.Cell0DsCoordinates(0, id);
     	y= mesh.Cell0DsCoordinates(1, id);
         mesh.Cell0DsId.push_back(id);
+        mesh.Marker0d.push_back(marker);
+        //cout<< mesh.Marker0d[id] << endl;
+        //cout << id << endl;
         if( marker!=0 && ( eps < x && x < 1-eps ) && (eps < y && y < 1-eps) )
 		{
         	cout << "The cell " << id << " is as the cell that hasn't the marker stored correctly." << endl;
@@ -66,12 +70,15 @@ bool ImportCell0Ds(PolygonalMesh& mesh)
 		}
     }
     if(flag_marker){
-    	cout << "All cells have the marker stored correctly" << endl;
+    	cout << "All cells 0d have the marker stored correctly." << endl;
+	}else{
+		cout << "The markers 0d aren't stored correctly" << endl;
 	}
     return true;
 }
 bool ImportCell1Ds(PolygonalMesh& mesh)
 {
+	bool flag_marker = true;
 	char separator=';';
     ifstream file("./Cell1Ds.csv");
 
@@ -96,7 +103,7 @@ bool ImportCell1Ds(PolygonalMesh& mesh)
 
     mesh.Cell1DsId.reserve(mesh.NumCell1Ds);
     mesh.Cell1DsExtrema = Eigen::MatrixXi(2, mesh.NumCell1Ds);
-
+	double eps = 2.2*10e-16;
     for (const string& line : listLines)
     {
         istringstream converter(line);
@@ -108,8 +115,34 @@ bool ImportCell1Ds(PolygonalMesh& mesh)
         converter >>  id >> separator 
 		>> marker >> separator >> mesh.Cell1DsExtrema(0, id) >>
 		separator >>  mesh.Cell1DsExtrema(1, id);
-        mesh.Cell1DsId.push_back(id);  
-    } 
+        mesh.Cell1DsId.push_back(id); 
+        unsigned int p0= mesh.Cell1DsExtrema(0, id);
+        unsigned int p1= mesh.Cell1DsExtrema(1, id);
+        unsigned int m0 = mesh.Marker0d[p0];
+        unsigned int m1 = mesh.Marker0d[p1];
+        double x0 = mesh.Cell0DsCoordinates(0,p0);
+        double y0 = mesh.Cell0DsCoordinates(1,p0);
+        double x1 = mesh.Cell0DsCoordinates(0,p1);
+        double y1 = mesh.Cell0DsCoordinates(1,p1);
+        if(m0!=0 && m1!=0){
+        	switch((int) (m0!=m1)){
+        		case 1:
+        			if((( x0>eps && x0<1-eps)||(y0>eps && y0<1-eps)) ||
+					   (( x1>eps && x1<1-eps )&&( y1>eps && y1<1-eps)) ){
+        				flag_marker=false;
+					}
+        		break;
+        		default:
+        			flag_marker=true;
+        			break;
+			}
+		}
+    }
+	if(flag_marker){
+    	cout << "All cells 1d have the marker stored correctly." << endl;
+	} else{
+		cout << "The markers 1d aren't stored correctly" << endl;
+	}
     return true;
 }
  
@@ -200,6 +233,7 @@ void NonZero_Area(PolygonalMesh& mesh){
 	double TotArea = 0.0;
 	double Area = 0.0;
 	bool flag = true;
+	cout << "\t\tArea" << endl;
 	for(auto& c: mesh.Cell2DsId)
 		{
 			Area = 0.0;
@@ -230,6 +264,7 @@ void NonZero_Area(PolygonalMesh& mesh){
 			}
 			
 			Area=(double)abs(Area);
+			
 			cout << " (ID) c: " << c << "-> " << Area << endl;
 			TotArea+=Area;
 			if(Area<tau){

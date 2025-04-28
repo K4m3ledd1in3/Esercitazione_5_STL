@@ -20,6 +20,7 @@ struct PolygonalMesh
     Eigen::MatrixXi Cell1DsExtrema;
     map<unsigned int , vector<unsigned int> > Cell2DsVertices;
     map<unsigned int , vector<unsigned int> > Cell2DsEdges;
+    vector<unsigned int> Marker0d;
 };
 
 }
